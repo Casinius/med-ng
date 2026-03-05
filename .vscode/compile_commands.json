@@ -1,0 +1,6 @@
+[
+{
+  "directory": "/home/cyan/文档/micro-ng-cpp",
+  "arguments": ["/usr/bin/g++", "-c", "-m64", "-fvisibility=hidden", "-fvisibility-inlines-hidden", "-O3", "-std=c++26", "-I", "/home/cyan/.xmake/packages/r/rang/2022.07.01/5675f1e964af4d699c0d9e5f3c5f035a/include", "-I", "/home/cyan/.xmake/packages/f/fmt/12.1.0/8a24306c357441a095c4e7e3408475be/include", "-DNDEBUG", "-o", "build/.objs/micro-ng-cpp/linux/x86_64/release/src/main.cpp.o", "src/main.cpp"],
+  "file": "src/main.cpp"
+}]
