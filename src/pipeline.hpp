@@ -1,5 +1,6 @@
 #include "fmt/core.h"
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -20,11 +21,12 @@ struct pipeline_renderer {
   std::array<frame, 2> frames_; // 双缓冲
   std::chrono::steady_clock clk;
   
-
-
+  
+  std::mutex mtx_;
 public:
   bool write(frame &&f) {
     {
+      std::lock_guard<std::mutex> lg(mtx_);
       for (auto &slot : frames_) {
         
         if (slot.status == stage::idle) {
@@ -39,7 +41,7 @@ public:
 
   // 阻塞
   void submit_render(uint frame_idx, auto render_fn,std::chrono::steady_clock::duration dur_deadline) {
-
+    std::lock_guard<std::mutex> lg(mtx_);
     if (frame_idx != 0 and frame_idx != 1) {
       return;
     }
@@ -57,7 +59,7 @@ public:
 };
 
 void time_control(auto fn,
-                       std::chrono::steady_clock::duration duration_deadline,auto...args) {
+                       std::chrono::steady_clock::duration duration_deadline,auto&&...args) {
   std::chrono::steady_clock clk;
   std::chrono::steady_clock::duration dura;
   std::chrono::steady_clock::time_point before_sub = clk.now();
