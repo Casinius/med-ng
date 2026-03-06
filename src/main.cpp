@@ -5,7 +5,6 @@
 #include "linux_term.hpp"
 #include "pipeline.hpp"
 #include "rang.hpp"
-#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <ranges>
@@ -21,13 +20,13 @@ frame form_rectangle(float w_percent, float h_percent, back bg) {
   frame f;
   f.buffer.emplace_back(color_unix(bg));
   auto height = static_cast<int>(h_percent * get_terminal_size_unix()->rows);
-  for (auto i : views::iota(1, height)) {
-    fmt::println("loop_h:{}", height);
+  for (auto i : views::iota(1, 1 + height)) {
+    //fmt::println("loop_h:{}", height);
     auto line_length =
         static_cast<int>(get_terminal_size_unix()->cols * w_percent);
     std::string str;
-    for (auto c : views::iota(1, line_length)) {
-      fmt::println("loop_w:{}", line_length);
+    for (auto c : views::iota(1, 1 + line_length)) {
+      //fmt::println("loop_w:{}  real_len:{}", line_length,get_terminal_size_unix()->cols);
       str.push_back(' ');
     }
     f.buffer.emplace_back(str);
@@ -44,7 +43,7 @@ int main(int argc, char **argv) {
       [](pipeline_renderer &pip) {
         pipeline_renderer::frame f;
         f.buffer = {color_unix(rang::bgB::red), " ", "-", " "};
-        auto f2 = form_rectangle(0.8, 0.9, rang::bgB::blue);
+        auto f2 = form_rectangle(0.8, 0.2, rang::bgB::blue);
         time_control([](pipeline_renderer& pip,frame& f,frame& f2){
           pip.write(std::move(f));
           pip.write(std::move(f2));
