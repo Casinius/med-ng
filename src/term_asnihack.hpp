@@ -1,5 +1,6 @@
 #include "fmt/core.h"
-
+#ifndef __TERM_HACK__
+#define __TERM_HACK__
 inline void move_cursor(uint y,uint x){
   fmt::print("\033[{};{}H",fmt::to_string(y),fmt::to_string(x));
 }
@@ -23,3 +24,4 @@ inline void atomic_submit(){
 inline void atomic_flush(){
   fmt::print("\033[?2026l");
 }
+#endif

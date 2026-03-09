@@ -2,6 +2,9 @@
 #include <fmt/core.h>
 #include <fmt/std.h>
 #include <rang.hpp>
+
+#ifndef __COLORS_UTIL___
+#define __COLORS_UTIL___
 template<class...T>
 concept is_in_t = (std::is_same_v<T, rang::bg> or ...); //不要()不然就实例化了，就变成纯粹false了
 
@@ -18,3 +21,4 @@ template<color_t T>
 std::string color_unix(T color){
     return "\033["+fmt::to_string(static_cast<int>(color))+"m";
 }
+#endif

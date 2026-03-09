@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <optional>
 #include <utility>
-
+#ifndef __LINUX_TERM__
+#define __LINUX_TERM__
 struct TerminalSize {
     int rows;
     int cols;
@@ -20,4 +21,5 @@ std::optional<TerminalSize> get_terminal_size_unix() {
     }
     return std::nullopt;
 }
+#endif
 #endif

@@ -7,7 +7,8 @@
 
 #include <thread>
 #include <utility>
-
+#ifndef __PIPLINE__
+#define __PIPLINE__
 struct pipeline_renderer {
   enum class stage { idle,ready,rendered };
   struct frame {
@@ -71,3 +72,4 @@ void time_control(auto fn,
     std::this_thread::sleep_for(duration_deadline-dura);
   }
 }
+#endif
