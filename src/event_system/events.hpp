@@ -1,8 +1,8 @@
 
 #include "fmt/base.h"
-#include "linux_term.hpp"
-#include "pipeline.hpp"
-#include <atomic>
+#include "../render_system/linux_term.hpp"
+#include "../render_system/pipeline.hpp"
+
 #include <chrono>
 #include <condition_variable>
 #include <fcntl.h>
@@ -19,7 +19,7 @@ struct event_linux_input {
   input_event ev;
   inline static std::once_flag global_sign;
   std::string event_name;
-  event_linux_input(std::string ev_name) : event_name(ev_name) {
+  explicit event_linux_input(std::string ev_name) : event_name(ev_name) {
     std::call_once(global_sign, [this]() {
       this->fd = open(event_name.c_str(), O_RDONLY);
       if (fd == -1) {
@@ -40,8 +40,8 @@ struct event_linux_input {
 
     // 仅打印非同步事件（SYN_REPORT 无实际数据）
     if (ev.type != EV_SYN) {
-      printf("time: %ld.%06ld, type: %d, code: %d, value: %d\n", ev.time.tv_sec,
-             ev.time.tv_usec, ev.type, ev.code, ev.value);
+      printf("time: %ld.%06ld, type: %d, code: %d, value: %d\n", ev.time.tv_sec, ev.time.tv_usec,
+             ev.type, ev.code, ev.value);
     }
     return true;
   }
@@ -58,38 +58,42 @@ struct events {
 };
 
 struct key_ev : events {
-  key_ev() { std::thread(); }
+  key_ev() {
+    std::thread();
+  }
 };
 struct render_ev : events {
   bool is_ok{false};
-  bool event_call(){
-    std::unique_lock lock(mtx_);
-    cv_.wait(lock,[this]{return is_ok;});
-    fmt::print("called");
-    return true;
+  bool event_checkonce() {
+    auto tmp = is_ok;
+    {
+      std::unique_lock lck(mtx_);
+      is_ok =false;
+    }
+    return tmp;
   }
 
   void event_launch() {
-    std::unique_lock lock(mtx_);
     int tmp_h = get_terminal_size_unix()->rows;
     int tmp_w = get_terminal_size_unix()->cols;
-    while (1) {
-      while (1) {
-        //fmt::print("detecting screen");
-        if (tmp_h != get_terminal_size_unix()->rows ||
-            tmp_w != get_terminal_size_unix()->cols) {
+    while (true) {
+
+      while (true) {
+
+        if (tmp_h != get_terminal_size_unix()->rows || tmp_w != get_terminal_size_unix()->cols) {
           tmp_h = get_terminal_size_unix()->rows;
           tmp_w = get_terminal_size_unix()->cols;
-          //fmt::print("detecting screen");
+          fmt::print("detecting screen done");
           break;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 睡觉的时候不要握锁
       }
-      is_ok=true;
-      cv_.notify_one();
-
+      {
+        std::unique_lock lock(mtx_);
+        is_ok = true;
+      }
+      fmt::print("notifyed");
     }
-
   }
 };
 #endif

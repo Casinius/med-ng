@@ -10,3 +10,5 @@ build/
 .ccls-cache/
 .ccls
 .clangd
+.clang-tidy
+.clang-format
