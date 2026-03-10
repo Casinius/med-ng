@@ -1,20 +1,26 @@
 
+#include "fmt/base.h"
+#include "linux_term.hpp"
+#include "pipeline.hpp"
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <fcntl.h>
 #include <linux/input.h>
 #include <mutex>
 #include <stdlib.h>
 #include <string>
-#include <string_view>
+#include <thread>
 #include <unistd.h>
 #ifndef __EVENTS__
 #define __EVENTS__
 struct event_linux_input {
   int fd;
   input_event ev;
-  std::once_flag global_sign;
-
-  event_linux_input(std::string event_name) {
-    std::call_once(global_sign, [this, &event_name]() {
+  inline static std::once_flag global_sign;
+  std::string event_name;
+  event_linux_input(std::string ev_name) : event_name(ev_name) {
+    std::call_once(global_sign, [this]() {
       this->fd = open(event_name.c_str(), O_RDONLY);
       if (fd == -1) {
         perror("open failed");
@@ -24,21 +30,66 @@ struct event_linux_input {
     });
   }
   auto ev_loop() {
-    while (1) {
-      ssize_t n = read(fd, &ev, sizeof(ev));
-      if (n == -1) {
-        perror("read failed");
-        close(fd);
-        return false;
-      }
 
-      // 仅打印非同步事件（SYN_REPORT 无实际数据）
-      if (ev.type != EV_SYN) {
-        printf("time: %ld.%06ld, type: %d, code: %d, value: %d\n",
-               ev.time.tv_sec, ev.time.tv_usec, ev.type, ev.code, ev.value);
-      }
+    ssize_t n = read(fd, &ev, sizeof(ev));
+    if (n == -1) {
+      perror("read failed");
+      close(fd);
+      return false;
+    }
+
+    // 仅打印非同步事件（SYN_REPORT 无实际数据）
+    if (ev.type != EV_SYN) {
+      printf("time: %ld.%06ld, type: %d, code: %d, value: %d\n", ev.time.tv_sec,
+             ev.time.tv_usec, ev.type, ev.code, ev.value);
+    }
+    return true;
+  }
+  ~event_linux_input() {
+    if (fd != -1) {
+      close(this->fd);
     }
   }
-  ~event_linux_input() { close(this->fd); }
+};
+struct events {
+
+  std::mutex mtx_;
+  std::condition_variable cv_;
+};
+
+struct key_ev : events {
+  key_ev() { std::thread(); }
+};
+struct render_ev : events {
+  bool is_ok{false};
+  bool event_call(){
+    std::unique_lock lock(mtx_);
+    cv_.wait(lock,[this]{return is_ok;});
+    fmt::print("called");
+    return true;
+  }
+
+  void event_launch() {
+    std::unique_lock lock(mtx_);
+    int tmp_h = get_terminal_size_unix()->rows;
+    int tmp_w = get_terminal_size_unix()->cols;
+    while (1) {
+      while (1) {
+        //fmt::print("detecting screen");
+        if (tmp_h != get_terminal_size_unix()->rows ||
+            tmp_w != get_terminal_size_unix()->cols) {
+          tmp_h = get_terminal_size_unix()->rows;
+          tmp_w = get_terminal_size_unix()->cols;
+          //fmt::print("detecting screen");
+          break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+      is_ok=true;
+      cv_.notify_one();
+
+    }
+
+  }
 };
 #endif
