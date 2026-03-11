@@ -19,7 +19,6 @@ struct pipeline_renderer {
 
   frame write_frame;
   frame render_frame;
-
   std::chrono::steady_clock clk;
 
   std::mutex mtx_;
@@ -50,7 +49,7 @@ public:
   }
 };
 
-void time_control(auto fn, std::chrono::steady_clock::duration duration_deadline, auto&&... args) {
+void time_control(auto fn, std::chrono::steady_clock::duration duration_deadline,bool is_skip, auto&&... args) {
   std::chrono::steady_clock clk;
   std::chrono::steady_clock::duration dura;
   std::chrono::steady_clock::time_point before_sub = clk.now();
@@ -58,7 +57,7 @@ void time_control(auto fn, std::chrono::steady_clock::duration duration_deadline
   std::chrono::steady_clock::time_point after = clk.now();
   dura = after - before_sub;
 
-  if (dura < duration_deadline) {
+  if (dura < duration_deadline && is_skip==false) {
     std::this_thread::sleep_for(duration_deadline - dura);
   }
 }
