@@ -89,4 +89,8 @@ pipeline_renderer::frame form_rectangle(float w_percent, float h_percent, float 
   return f;
 }
 
+template<backcolor_t back>
+pipeline_renderer::frame span(float y_pos,float x_pos,float w_percent){
+  
+}
 #endif
