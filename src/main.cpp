@@ -1,110 +1,113 @@
 
-
-#include "event_system/events.hpp"
-#include "fmt/base.h"
-#include "graph.hpp"
-#include "rang.hpp"
-#include "render_system/colors.hpp"
-#include "render_system/linux_term.hpp"
-#include "render_system/pipeline.hpp"
-#include "render_system/term_asnihack.hpp"
+#include "ftxui/component/component_base.hpp"
+#include "ftxui/component/component_options.hpp"
+#include "ftxui/dom/canvas.hpp"
+#include "ftxui/dom/flexbox_config.hpp"
+#include "ftxui/dom/node.hpp"
+#include "ftxui/dom/selection.hpp"
+#include "ftxui/screen/screen.hpp"
+#include "ftxui/util/ref.hpp"
 
 #include <chrono>
-#include <cstddef>
-#include <cstdio>
-#include <memory>
-#include <thread>
+#include <climits>
+#include <filesystem>
+#include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
+#include <ftxui/dom/elements.hpp>
+#include <tuple>
 #include <vector>
-using frame = pipeline_renderer::frame;
 
-void run_render(std::shared_ptr<events> event, std::shared_ptr<pipeline_renderer> pipeline_main) {
-  while (true) {
-    
-    if (std::static_pointer_cast<render_ev>(event)->event_checkonce()) {
-      std::fflush(stdout);
-      clear_remain_color();
-      pipeline_main->submit_render(
-          [](const pipeline_renderer::frame& frame) {
-            auto x = get_terminal_size_unix()->rows;
-            hide_cursor();
+using namespace ftxui;
+ButtonOption CompactButtonStyle() {
+  ButtonOption opt;
+  opt.transform = [](const EntryState& s) {
+    auto element = text(s.label);
 
-            atomic_submit();
-            for (size_t i = 0; i < static_cast<size_t>(x); ++i) {
-              move_cursor(i, 0);
-              if (i < frame.buffer.size()) {
-                fmt::print("{}", frame.buffer[i]);
-              } else {
-                fmt::print("{}", color_unix(0));
-              }
-            }
-            atomic_flush();
-            return std::chrono::steady_clock::now();
-          },
-          std::chrono::milliseconds(0));
-      std::fflush(stdout);
+    if (s.active) {
+      element = element | bold;
     }
-    
-    
-    time_control(
-        [](std::shared_ptr<pipeline_renderer> pip) {
-          std::fflush(stdout);
-          pip->submit_render(
-              [](const pipeline_renderer::frame& frame) {
-                auto x = get_terminal_size_unix()->rows;
-                hide_cursor();
 
-                atomic_submit();
-                for (size_t i = 0; i < static_cast<size_t>(x); ++i) {
-                  move_cursor(i, 0);
-                  if (i < frame.buffer.size()) {
-                    fmt::print("{}", frame.buffer[i]);
-                  } else {
-                    fmt::print("{}", color_unix(0));
-                  }
-                }
-                atomic_flush();
-                return std::chrono::steady_clock::now();
-              },
-              std::chrono::milliseconds(10));
-          std::fflush(stdout);
-        },
-        std::chrono::milliseconds(13),false, pipeline_main);
-  }
+    if (s.focused) {
+      element = element | bgcolor(Color::Grey23);
+    }
+
+    // 紧凑内边距
+    return hbox({text(" "), element, text(" ")});
+  };
+  return opt;
 }
 
-int main(int argc, char** argv) {
-  auto pipeline_main = std::make_shared<pipeline_renderer>();
-  auto events_main = std::make_shared<events>();
-  into_backup_screen();
-  std::thread t1(
-      [](std::shared_ptr<pipeline_renderer> pip, auto ev_main) {
-        pipeline_renderer::frame f;
-        f.buffer = {color_unix(rang::bgB::red), " ", "-", " "};
-        auto f2 = form_rectangle(0.2, 0.2, 0.1, 0.1, rang::bgB::blue);
-        pip->write(f2);
+auto file_manager(std::vector<std::string>& vsr,int& selection,std::filesystem::path pth){
+  std::filesystem::directory_iterator list(pth);
+  for (auto x:list) {
+    if(x.is_directory()){
+      vsr.emplace_back(x.path().filename());
+    }
+    if (x.is_regular_file()) {
+      vsr.emplace_back(x.path().filename());
+    }
+  }
+  return Menu(&vsr,&selection);
+} 
 
-        while (true) {
+int main() {
+  auto screen = ScreenInteractive::FullscreenAlternateScreen();
 
-          f2 = form_rectangle(0.2, 0.2, 0.1, 0.1, rang::bgB::blue);
+  // 创建一个可拖拽窗口
+  WindowOptions win_opts_proj;
+  win_opts_proj.title = "project";
+  //win_opts_proj.left = 0;
+  //win_opts_proj.top = 0;
+  //win_opts_proj.width = 20;
+  win_opts_proj.height = 200;
+  
+  WindowOptions win_opts_code;
+  win_opts_code.title = "editor";
+  //win_opts_code.left = 0;
+  //win_opts_code.top = 0;
+  win_opts_code.width = 200;
+  win_opts_code.height = 200;
+  int selected_obj = 0;
+  
+  auto window_code = Window(win_opts_code);
+  int proj_selection = 0;
 
-          time_control(
-              [](std::shared_ptr<pipeline_renderer> pip, frame& f, frame& f2) {
-                pip->write(f);
-                pip->write(f2);
-              },
-              std::chrono::milliseconds(5),false, pip, f, f2);
-        }
+  std::vector<std::string> entries = {
+  };
+  auto window_proj = file_manager(entries, proj_selection,"/home/cyan");
+  bool global_isshow_dropdown = false;
+
+  WindowOptions win_opts_dropdown;
+  win_opts_dropdown.title = "";
+  win_opts_dropdown.left = 0;
+  win_opts_dropdown.top = 0;
+  win_opts_dropdown.width = 10;
+  win_opts_dropdown.height = 20;
+
+  auto file_button = Button(
+      "file",
+      [&] {
+        global_isshow_dropdown = !global_isshow_dropdown;
       },
-      pipeline_main, events_main);
+      CompactButtonStyle());
 
-  std::thread t2(
-      [](auto ev) {
-        std::static_pointer_cast<render_ev>(ev)->event_launch(std::chrono::milliseconds(6));
-      },
-      events_main);
-  t2.detach();
-  t1.detach();
+  auto file_dropdown = Window(win_opts_dropdown);
 
-  run_render(events_main, pipeline_main);
+  auto top_bar_options = Container::Horizontal(
+      {file_button, Button("exit", screen.ExitLoopClosure(), CompactButtonStyle())});
+
+
+  int size = 20;
+  auto layout_main = ResizableSplitLeft(window_proj,window_code, &size);
+  
+  
+  
+  
+  auto layout = Container::Vertical({
+    top_bar_options,
+    layout_main,
+  });
+  
+  screen.Loop(layout);
   return 0;
 }

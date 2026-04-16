@@ -1,11 +1,11 @@
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
-add_requires("rang","fmt")
+add_requires("ftxui")
 set_languages("c++latest")
 target("micro-ng-cpp")
     set_kind("binary")
     add_files("src/*.cpp")
-    add_packages("rang","fmt")
+    add_packages("ftxui")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --
