@@ -1,17 +1,15 @@
 #include "cbase.h"
 #include "code_ui.hpp"
 #include "framework.hpp"
-#include "builtin_core.hpp"
-using namespace ftxui;
+#include "ftxui/component/component.hpp"
+#include "ftxui/component/screen_interactive.hpp"
+#include "ftxui/screen/screen.hpp"
 
+#include <filesystem>
+#include <vector>
 
+auto builtin_core_editor(ftxui::ScreenInteractive&& screen){
 
-
-int main() {
-  
-  bool show_plugin_load = false;
-  auto screen = ScreenInteractive::FullscreenAlternateScreen();
-  
   auto window_code = Window(optwin_code());
   int proj_selection = 0;
 
@@ -99,10 +97,6 @@ int main() {
       dyn_dropdown | ftxui::Maybe(&global_isshow_dropdown),
       layout_main,
   });
-  if (!show_plugin_load) {
-    screen.Loop(layout);
-  }
-
-
-  return 0;
+  return layout;
+  
 }
