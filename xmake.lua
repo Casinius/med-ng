@@ -1,11 +1,19 @@
 add_rules("mode.debug", "mode.release")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
-add_requires("ftxui")
+add_requires("ftxui","lsp-framework","mio")
 set_languages("c++latest")
-target("micro-ng-cpp")
+target("med-cpp")
     set_kind("binary")
     add_files("src/*.cpp")
-    add_packages("ftxui")
+    add_packages("ftxui","lsp-framework","mio")
+target("utf8-test")
+    set_kind("binary")
+    add_files("src/test/utf_render_test.cpp")
+    add_packages("ftxui","lsp-framework","mio")
+target("tia-test")
+    set_kind("binary")
+    add_files("src/test/tia_render.cpp")
+    add_packages("ftxui","lsp-framework","mio")
 --
 -- If you want to known more usage about xmake, please see https://xmake.io
 --

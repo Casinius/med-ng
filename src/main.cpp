@@ -1,17 +1,18 @@
+#include "builtin_core.hpp"
 #include "cbase.h"
 #include "code_ui.hpp"
 #include "framework.hpp"
-#include "builtin_core.hpp"
+#include "ftxui/component/component.hpp"
+#include "ftxui/component/component_base.hpp"
+#include "ftxui/dom/node.hpp"
 using namespace ftxui;
 
 
+int main(int argc, char *argv[]) {
 
-
-int main() {
-  
   bool show_plugin_load = false;
   auto screen = ScreenInteractive::FullscreenAlternateScreen();
-  
+
   auto window_code = Window(optwin_code());
   int proj_selection = 0;
 
@@ -66,7 +67,8 @@ int main() {
   int size = 20;
 
   auto repaint_window_proj = Renderer(dyn_window_proj, [&] {
-    return window(ftxui::text("Project"), ftxui::hbox({dyn_window_proj->Render()})) | ftxui::flex_shrink;
+    return window(ftxui::text("Project"), ftxui::hbox({dyn_window_proj->Render()})) |
+ftxui::flex_shrink;
   });
 
   auto layout_main = ResizableSplitLeft(repaint_window_proj, window_code, &size);
@@ -103,6 +105,7 @@ int main() {
     screen.Loop(layout);
   }
 
-
   return 0;
 }
+
+

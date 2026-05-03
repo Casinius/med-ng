@@ -1,6 +1,21 @@
 #include "cbase.h"
+#include "ftxui/component/component_base.hpp"
+#include "ftxui/dom/node.hpp"
+#include "ftxui/screen/screen.hpp"
 
+#include <algorithm>
+#include <cstddef>
 #include <filesystem>
+#include <iterator>
+#include <memory>
+#include <mio/mmap.hpp>
+#include <numeric>
+#include <print>
+#include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
+#include <vector>
 #ifndef __FRAMEWORK__
 #define __FRAMEWORK__
 inline ftxui::ButtonOption CompactButtonStyle() {
@@ -90,5 +105,59 @@ bool is_under_equivalent(const std::filesystem::path& child, const std::filesyst
   }
   return false;
 }
-namespace external_file_manager {}
+
+namespace text_editor {
+int mio_errhandle(const std::error_code& error) {
+  const auto& errmsg = error.message();
+  std::println("error mapping file {},exiting...",errmsg.c_str());
+  return error.value();
+}
+struct Document_FSLayer {
+  mio::mmap_sink mmap;
+  auto map_file(std::filesystem::path pth){
+    std::error_code error;
+    this->mmap = mio::make_mmap_sink(pth.c_str(), 0, mio::map_entire_file, error);
+    if (error) {
+      return mio_errhandle(error);
+    }
+
+  }
+  void insert(std::string_view sv,auto begin){
+    
+  }
+  ~Document_FSLayer(){
+    this->mmap.unmap();
+  }
+};
+
+struct Document_Vis{
+  using line_t = uint;
+  std::vector<std::pair<line_t,std::string>> rw_buf;
+  std::vector<std::string> list_diagnostic;
+  std::vector<std::string> list_recommand;
+  Document_Vis(){
+    
+  }
+  ~Document_Vis(){
+
+  }
+  
+};
+
+struct Editor_Component : public ftxui::ComponentBase{
+
+  std::shared_ptr<ftxui::Element> file_;
+  Document_Vis dvis;
+  Editor_Component(){
+
+  }
+  ftxui::Element Render() {
+
+  }
+  ~Editor_Component(){
+
+  }
+};
+
+} // namespace text_editor
 #endif
